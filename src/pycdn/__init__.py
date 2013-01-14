@@ -59,7 +59,9 @@ The main entrypoint of pyCDN
         elif o in ('-n','--name-server'):
             nameservers.append(o)
         elif o in ('-d','--domain'):
-            domain = o
+            domain = a
+
+
 
     cdn = []
     with open(hosts) as h:
