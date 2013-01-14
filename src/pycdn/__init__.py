@@ -73,7 +73,7 @@ The main entrypoint of pyCDN
         zone['serial'] = int(time.strftime("%Y%M%d00"))
         zone['contact'] = contact
         zone['max_hosts'] = 2
-        ns = [dict(n,None) for n in nameservers]
+        ns = [dict(n=None) for n in nameservers]
         zone['data'] = {'':{'ns':ns}}
         a = dict(a=[],aaaa=[])
         status = _opstatus()
