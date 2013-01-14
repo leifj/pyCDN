@@ -61,8 +61,6 @@ The main entrypoint of pyCDN
         elif o in ('-d','--domain'):
             domain = a
 
-
-
     cdn = []
     with open(hosts) as h:
         for l in h.readlines():
@@ -129,4 +127,9 @@ watch %s
               period 
                       numalerts 10
                       alert mail.alert
-                      upalert mail.alert""" % v[1]
+                      upalert mail.alert
+
+      service ping
+                description Responses to ping
+                interval 1m
+                monitor fping.monitor""" % v[1]
