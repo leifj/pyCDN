@@ -23,8 +23,17 @@ def _p(args,env=dict()):
 def _opstatus():
     res = dict()
     for l in _p(['moncmd','list','opstatus']).readlines():
+        def _d(i,e):
+            s = i.split('=')
+            if len(s) == 1:
+                e[s] = None
+            else:
+                e[s[0]] = s[1]
+
         if "group=" in l:
-            e = [dict(item.split('=')) for item in l.split()]
+            e = dict()
+            for item in l.split():
+                _d(item,e)
             res["%s#%s" % (e['group'],e['service'])] = e
     return res
 
@@ -57,7 +66,7 @@ The main entrypoint of pyCDN
         elif o in ('-c','--contact'):
             contact = a
         elif o in ('-n','--name-server'):
-            nameservers.append(o)
+            nameservers.append(a)
         elif o in ('-d','--domain'):
             domain = a
 
@@ -73,7 +82,9 @@ The main entrypoint of pyCDN
         zone['serial'] = int(time.strftime("%Y%M%d00"))
         zone['contact'] = contact
         zone['max_hosts'] = 2
-        ns = [dict(n=None) for n in nameservers]
+        ns = dict()
+        for n in nameservers:
+            ns[n] = None
         zone['data'] = {'':{'ns':ns}}
         a = dict(a=[],aaaa=[])
         status = _opstatus()
