@@ -100,7 +100,7 @@ The main entrypoint of pyCDN
             else:
                 logging.error("Unknown address format %s" % v[0])
 
-            zone['data'][cn][at] = ar
+            zone['data'][cn][at] = [ar]
             if _up(status,cn):
                 a[at].append(ar)
                 for vn in v[2:]:
