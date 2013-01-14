@@ -48,7 +48,8 @@ def main():
 The main entrypoint of pyCDN
     """
     try:
-        opts,args = getopt.getopt(sys.argv[1:],'hf:c:n:d:',['help','hosts=','contact=','name-server=','domain='])
+        opts,args = getopt.getopt(sys.argv[1:],'hf:c:n:d:a:',
+            ['help','hosts=','contact=','name-server=','domain=','alert='])
     except getopt.error,msg:
         print msg
         sys.exit(2)
@@ -56,6 +57,7 @@ The main entrypoint of pyCDN
     hosts = "hosts.txt"
     contact = None
     domain = None
+    alert = "root@localhost"
     nameservers = []
     for o,a in opts:
         if o in ('-h','--help'):
@@ -69,6 +71,8 @@ The main entrypoint of pyCDN
             nameservers.append(a)
         elif o in ('-d','--domain'):
             domain = a
+        elif o in ('-a','--alert'):
+            alert = a
 
     cdn = []
     with open(hosts) as h:
@@ -109,8 +113,10 @@ The main entrypoint of pyCDN
                     zone['data'][vn].setdefault('aaaa',[])
                     zone['data'][vn][at].append(ar)
 
-        zone['data']['']['a'] = a['a']
-        zone['data']['']['aaaa'] = a['aaaa']
+        if len(a['a']) > 0:
+            zone['data']['']['a'] = a['a']
+        if len(a['aaaa']) > 0:
+            zone['data']['']['aaaa'] = a['aaaa']
         print json.dumps(zone)
     elif cmd == 'moncfg':
         print """
@@ -126,24 +132,24 @@ dtlogfile               = dtlog
 """
 
         for v in cdn:
-            print "hostgroup %s %s.%s" % (v[1],v[1],domain)
+            print "hostgroup %(host)s %(host)s.%(domain)s" % {'host': v[1],'domain':domain}
 
         for v in cdn:
             print """
-watch %s
+watch %(hostgroup)s
       service http
               description "HTTP service"
               interval 2m
               monitor http.monitor
               period 
                       numalerts 10
-                      alert mail.alert root@localhost
-                      upalert mail.alert root@localhost
+                      alert mail.alert %(alert)s
+                      upalert mail.alert %(alert)s
       service ping
-                description Responses to ping
+                description "Responses to ping"
                 interval 1m
                 monitor fping.monitor
                 period
                       numalerts 10
-                      alert mail.alert root@localhost
-                      upalert mail.alert root@localhost""" % v[1]
+                      alert mail.alert %(alert)s
+                      upalert mail.alert %(alert)s""" % {'hostgroup': v[1],'alert':alert}
