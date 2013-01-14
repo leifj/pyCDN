@@ -38,10 +38,15 @@ def _opstatus():
     return res
 
 def _up(status,host):
-    sinfo = status.get('%s#%s' % (host,'ping'),None)
-    if sinfo is None:
+    def _ok(s):
+        return s.get('opstatus',"0") == "1"
+    ping = status.get('%s#%s' % (host,'ping'),None)
+    if ping is None:
         return False
-    return sinfo.get('opstatus',"0") == "1"
+    http = status.get('%s#%s' % (host,'http'),None)
+    if http is None:
+        return False
+    return _ok(ping) and _ok(http)
 
 def main():
     """
