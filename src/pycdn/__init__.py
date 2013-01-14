@@ -126,10 +126,13 @@ watch %s
               monitor http.monitor
               period 
                       numalerts 10
-                      alert mail.alert
-                      upalert mail.alert
-
+                      alert mail.alert root@localhost
+                      upalert mail.alert root@localhost
       service ping
                 description Responses to ping
                 interval 1m
-                monitor fping.monitor""" % v[1]
+                monitor fping.monitor
+                period
+                      numalerts 10
+                      alert mail.alert root@localhost
+                      upalert mail.alert root@localhost""" % v[1]
