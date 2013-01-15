@@ -39,7 +39,8 @@ def _opstatus():
 
 def _up(status,host):
     def _ok(s):
-        return s.get('opstatus',"0") == "1"
+        return s.get('opstatus',"0") != "0"
+
     ping = status.get('%s#%s' % (host,'ping'),None)
     if ping is None:
         return False
@@ -53,8 +54,8 @@ def main():
 The main entrypoint of pyCDN
     """
     try:
-        opts,args = getopt.getopt(sys.argv[1:],'hf:c:n:d:a:',
-            ['help','hosts=','contact=','name-server=','domain=','alert='])
+        opts,args = getopt.getopt(sys.argv[1:],'hf:c:n:d:a:v:',
+            ['help','hosts=','contact=','name-server=','domain=','alert=','vhosts='])
     except getopt.error,msg:
         print msg
         sys.exit(2)
@@ -63,6 +64,7 @@ The main entrypoint of pyCDN
     contact = None
     domain = None
     alert = "root@localhost"
+    vhosts = "vhosts.txt"
     nameservers = []
     for o,a in opts:
         if o in ('-h','--help'):
@@ -80,9 +82,15 @@ The main entrypoint of pyCDN
             alert = a
 
     cdn = []
-    with open(hosts) as h:
-        for l in h.readlines():
+    with open(hosts) as fd:
+        for l in fd.readlines():
             cdn.append(l.split())
+
+    aliases = []
+    with open(vhosts) as fd:
+        for l in fd.readlines():
+            e = l.split()
+            aliases.append(e[0])
 
     cmd = args[0]
     if cmd == 'geodns': 
@@ -97,6 +105,9 @@ The main entrypoint of pyCDN
         zone['data'] = {'':{'ns':ns}}
         a = dict(a=[],aaaa=[])
         status = _opstatus()
+
+        for v in aliases:
+            zone['data'][v] = dict(alias="")
 
         for v in cdn:
             cn = v[1]
