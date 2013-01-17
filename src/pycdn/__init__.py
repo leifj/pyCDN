@@ -16,6 +16,7 @@ import urllib
 import workerpool
 
 def _p(args,env=dict()):
+    logging.debug(" ".join(args))
     proc = subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env)
     out,err = proc.communicate()
     if err is not None and len(err) > 0:
@@ -60,7 +61,7 @@ def _pushto(hn,domain,mirror,res):
                    '-avz',
                    '--delete',
                    '-e','ssh -oStrictHostKeyChecking=no -i/opt/cdn/keys/cdn',
-                   mirror,'cdn@%s.%s:/var/www/' % (hn,domain)])
+                   "%s/" % mirror,'cdn@%s.%s:/var/www/' % (hn,domain)])
     except RuntimeError,ex:
         logging.error(ex)
         res[hn] = ex
