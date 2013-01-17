@@ -11,12 +11,9 @@ def _mt(environ,start_response):
     mt = MerkleTree(dir)
     return [json.dumps(mt)]
 
-def _host_meta(environ,start_response):
-    return not_found(environ,start_response)
-
 urls = [
-    (r'^$', _host_meta),
-    (r'mt/?$', _mt),
+    (r'^$', not_found),
+    (r'mt.json$', _mt),
     ]
 
 def application(environ,start_response):

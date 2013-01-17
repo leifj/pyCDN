@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # https://github.com/sangeeths/merkle-tree/blob/master/mt.py
+import logging
 
 import os
 import hashlib
@@ -15,12 +16,12 @@ class MerkleTree:
         self.__MT__()
 
     def Line(self):
-        print self._linelength*'-'
+        logging.debug(self._linelength*'-')
 
     def PrintHashList(self):
         self.Line()
         for item, itemhash in self._hashlist.iteritems():
-            print "%s %s" % (itemhash, item)
+            logging.debug("%s %s" % (itemhash, item))
         self.Line()
         return
 
@@ -28,19 +29,18 @@ class MerkleTree:
         value = self._mt[hash]
         item = value[0]
         child = value[1]
-        print "%s %s" % (hash, item)
+        logging.debug("%s %s" % (hash, item))
         if not child:
             return
         for itemhash, item in child.iteritems():
-            print "    -> %s %s" % (itemhash, item)
+            logging.debug("    -> %s %s" % (itemhash, item))
         for itemhash, item in child.iteritems():
             self.PrintMT(itemhash)
 
     def MT(self):
         for node, hash in self._hashlist.iteritems():
             items = self.GetItems(node)
-            value = []
-            value.append(node)
+            value = [node]
             list = {}
             for item in items:
                 if node == self._root:
@@ -55,7 +55,7 @@ class MerkleTree:
         self.HashList(self._root)
         #self.PrintHashList()
         self.MT()
-        print "Merkle Tree for %s: " % self._root
+        logging.debug("Merkle Tree for %s: " % self._root)
         self.PrintMT(self._tophash)
         self.Line()
 
@@ -66,7 +66,7 @@ class MerkleTree:
             try:
                 f = file(fn, 'rb')
             except:
-                return 'ERROR: unable to open %s' % fn
+                raise ValueError('ERROR: unable to open %s' % fn)
             while True:
                 d = f.read(8096)
                 if not d:
@@ -107,7 +107,7 @@ class MerkleTree:
             return
         for item in items:
             itemname = os.path.join(rootdir, item)
-            if os.path.isdir(itemname):
+            if os.path.isdir(itemname) and not os.path.islink(itemname):
                 self.HashListChild(item)
                 subitems = self.GetItems(item)
                 s = ''
@@ -125,7 +125,7 @@ class MerkleTree:
 
 def MTDiff(mt_a, a_tophash, mt_b, b_tophash):
     if a_tophash == b_tophash:
-        print "Top hash is equal for %s and %s" % (mt_a._root, mt_b._root)
+        logging.debug("Top hash is equal for %s and %s" % (mt_a._root, mt_b._root))
     else:
         a_value = mt_a._mt[a_tophash]
         a_child = a_value[1]    # retrive the child list for merkle tree a
@@ -135,9 +135,9 @@ def MTDiff(mt_a, a_tophash, mt_b, b_tophash):
         for itemhash, item in a_child.iteritems():
             try:
                 if b_child[itemhash] == item:
-                    print "Info: SAME : %s" % item
+                    logging.debug("Info: SAME : %s" % item)
             except:
-                print "Info: DIFFERENT : %s" % item
+                logging.debug("Info: DIFFERENT : %s" % item)
                 temp_value = mt_a._mt[itemhash]
                 if len(temp_value[1]) > 0:      # check if this is a directory
                     diffhash = list(set(b_child.keys()) - set(a_child.keys()))
