@@ -78,7 +78,6 @@ def merkle_tree(dir,d=dict()):
             for dir in dirnames:
                 subdir = os.path.join(path,dir)
                 merkle_tree(subdir,d)
-                logging.warn("%s -> %s" % (subdir,d[subdir]))
                 hl.append(subdir)
 
         if filenames is not None:
