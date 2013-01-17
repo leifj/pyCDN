@@ -1,4 +1,5 @@
 import hashlib
+import logging
 
 __author__ = 'leifj'
 
@@ -16,9 +17,12 @@ def _digest(dir,d=dict()):
         for fn in filenames:
             subfile = os.path.join(path,fn)
             md = hashlib.sha256()
-            with open(subfile) as fd:
-                md.update(fd.read())
-            d[subfile] = md.hexdigest()
+            try:
+                with open(subfile) as fd:
+                    md.update(fd.read())
+                d[subfile] = md.hexdigest()
+            except IOError,ex:
+                logging.warn(ex)
             dd.update(d[subfile])
         d[path] = dd.hexdigest()
 
