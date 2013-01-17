@@ -55,6 +55,10 @@ def _up(status,host):
         return False
     return _ok(ping) and _ok(http)
 
+def _dump(o,fn):
+    with open(fn,"w") as fd:
+        fd.write(json.dumps(o))
+
 def _pushto(hn,domain,mirror,res):
     try:
         return _p(['rsync',
@@ -93,8 +97,8 @@ def merkle_tree(dir,d=dict()):
 def _verify(cn,domain,dir,res):
     try:
         r = urllib.urlopen("http://%s.%s/.host-meta/mt.json" % (cn,domain))
-        mt_s = json.load(r)
-        mt_l = merkle_tree(dir)
+        mt_s = json.load(r); _dump(mt_s,"/tmp/mt_s.json");
+        mt_l = merkle_tree(dir); _dump(mt_l,"/tmp/mt_l.json");
         if not mt_s['/var/www'] == mt_l[dir]:
             logging.debug("%s != %s" % (mt_s['/var/www'],mt_l[dir]))
             res[cn] = False
