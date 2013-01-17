@@ -14,7 +14,6 @@ from StringIO import StringIO
 import time
 import urllib
 import workerpool
-from pycdn.mt import MerkleTree, mtcmp
 
 def _p(args,env=dict()):
     proc = subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env)
@@ -93,8 +92,9 @@ def _verify(cn,domain,dir,res):
     try:
         r = urllib.urlopen("http://%s.%s/.host-meta/mt.json" % (cn,domain))
         mt_s = json.load(r)
-        mt_l = MerkleTree(dir)
-        if not mtcmp(mt_s,mt_l):
+        mt_l = merkle_tree(dir)
+        if not mt_s['/var/www'] == mt_l[dir]:
+            logging.debug("%s != %s" % (mt_s['/var/www'],mt_l[dir]))
             res[cn] = False
     except Exception,ex:
         res[cn] = ex
