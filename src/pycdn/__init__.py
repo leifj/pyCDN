@@ -76,6 +76,7 @@ def merkle_tree(dir,d=dict()):
         for dir in dirnames.sort():
             subdir = os.path.join(path,dir)
             merkle_tree(subdir,d)
+            logging.warn("%s -> %s" % (subdir,d[subdir]))
             dd.update(d[subdir])
 
         for fn in filenames.sort():
