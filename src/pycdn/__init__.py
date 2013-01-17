@@ -74,14 +74,16 @@ def merkle_tree(dir,d=dict()):
     for path, dirnames, filenames in os.walk(dir,followlinks=False):
         hl = []
         if dirnames is not None:
-            for dir in dirnames.sort():
+            dirnames.sort()
+            for dir in dirnames:
                 subdir = os.path.join(path,dir)
                 merkle_tree(subdir,d)
                 logging.warn("%s -> %s" % (subdir,d[subdir]))
                 hl.append(subdir)
 
         if filenames is not None:
-            for fn in filenames.sort():
+            filenames.sort()
+            for fn in filenames:
                 subfile = os.path.join(path,fn)
                 md = hashlib.sha256()
                 try:
