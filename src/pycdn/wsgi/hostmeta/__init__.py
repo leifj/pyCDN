@@ -19,7 +19,7 @@ def _digest(dir,d=dict()):
             with open(subfile) as fd:
                 md.update(fd.read())
             d[subfile] = md.hexdigest()
-            dd.update[d[subfile]]
+            dd.update(d[subfile])
         d[path] = dd.hexdigest()
 
 def _mt(environ,start_response):
