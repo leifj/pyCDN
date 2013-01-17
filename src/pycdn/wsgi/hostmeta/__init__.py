@@ -21,9 +21,9 @@ def _digest(dir,d=dict()):
                 with open(subfile) as fd:
                     md.update(fd.read())
                 d[subfile] = md.hexdigest()
+                dd.update(d[subfile])
             except IOError,ex:
                 logging.warn(ex)
-            dd.update(d[subfile])
         d[path] = dd.hexdigest()
 
 def _mt(environ,start_response):
