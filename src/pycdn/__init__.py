@@ -98,7 +98,8 @@ def merkle_tree(dir,d=dict()):
                     logging.warn(ex)
 
         dd = hashlib.sha256()
-        for h in hl.sort():
+        hl.sort()
+        for h in hl:
             dd.update(d[h])
         d[path] = dd.hexdigest()
     return d
