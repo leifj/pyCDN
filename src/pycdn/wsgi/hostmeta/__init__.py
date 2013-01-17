@@ -25,6 +25,7 @@ def _digest(dir,d=dict()):
             except IOError,ex:
                 logging.warn(ex)
         d[path] = dd.hexdigest()
+    return d
 
 def _mt(environ,start_response):
     dir = os.environ.get("MT_DIR","/var/www")
