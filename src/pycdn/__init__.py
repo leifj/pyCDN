@@ -73,25 +73,27 @@ def _pushto(hn,domain,mirror,res):
 def merkle_tree(dir,d=dict()):
     for path, dirnames, filenames in os.walk(dir,followlinks=False):
         hl = []
-        for dir in dirnames.sort():
-            subdir = os.path.join(path,dir)
-            merkle_tree(subdir,d)
-            logging.warn("%s -> %s" % (subdir,d[subdir]))
-            hl.append(subdir)
+        if dirnames:
+            for dir in dirnames.sort():
+                subdir = os.path.join(path,dir)
+                merkle_tree(subdir,d)
+                logging.warn("%s -> %s" % (subdir,d[subdir]))
+                hl.append(subdir)
 
-        for fn in filenames.sort():
-            subfile = os.path.join(path,fn)
-            md = hashlib.sha256()
-            try:
-                with open(subfile,'rb') as fd:
-                    buf = fd.read(8196)
-                    while buf:
-                        md.update(buf)
+        if filenames:
+            for fn in filenames.sort():
+                subfile = os.path.join(path,fn)
+                md = hashlib.sha256()
+                try:
+                    with open(subfile,'rb') as fd:
                         buf = fd.read(8196)
-                d[subfile] = md.hexdigest()
-                hl.append(subfile)
-            except IOError,ex:
-                logging.warn(ex)
+                        while buf:
+                            md.update(buf)
+                            buf = fd.read(8196)
+                    d[subfile] = md.hexdigest()
+                    hl.append(subfile)
+                except IOError,ex:
+                    logging.warn(ex)
 
         dd = hashlib.sha256()
         for h in hl.sort():
