@@ -76,7 +76,9 @@ class MerkleTree:
             f.close()
         else:
             m.update(data)
-        return m.hexdigest()
+        digest = m.hexdigest()
+        logging.warn("sha2sum %s -> %s" % (data,digest))
+        return digest
 
     def GetItems(self, directory):
         value = []
