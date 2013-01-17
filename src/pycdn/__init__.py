@@ -59,13 +59,13 @@ def _dump(o,fn):
     with open(fn,"w") as fd:
         fd.write(json.dumps(o))
 
-def _pushto(hn,domain,mirror,res):
+def _pushto(hn,domain,root,res):
     try:
         return _p(['rsync',
                    '-avz',
                    '--delete',
                    '-e','ssh -oStrictHostKeyChecking=no -i/opt/cdn/keys/cdn',
-                   "%s/" % mirror,'cdn@%s.%s:/var/www/' % (hn,domain)])
+                   "%s/" % root,'cdn@%s.%s:%s/' % (hn,domain,root)])
     except RuntimeError,ex:
         logging.error(ex)
         res[hn] = ex
@@ -233,7 +233,14 @@ The main entrypoint of pyCDN
         def ok(cn):
             return _up(status,cn) and not pres.has_key(cn) and not vres.has_key(cn)
 
-        print _zone(contact,nameservers,aliases,cdn,ok)
+        with open("/opt/cdn/dns/%s.json" % domain,"w") as fd:
+            fd.write(_zone(contact,nameservers,aliases,cdn,ok))
+
+        pool = workerpool.WorkerPool(size=2)
+        pool.map(lambda cn: _pushto(cn,"samlbits.net","/opt/cdn/dns",dict()),['a.ns','b.ns'])
+        pool.shutdown()
+        pool.wait()
+
 
     if cmd == 'geodns':
         status = _opstatus()
