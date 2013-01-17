@@ -67,6 +67,7 @@ class MerkleTree:
                 f = file(fn, 'rb')
             except:
                 raise ValueError('ERROR: unable to open %s' % fn)
+            m.update('')
             while True:
                 d = f.read(8096)
                 if not d:
@@ -107,7 +108,7 @@ class MerkleTree:
             return
         for item in items:
             itemname = os.path.join(rootdir, item)
-            if os.path.isdir(itemname) and not os.path.islink(itemname):
+            if os.path.isdir(itemname):
                 self.HashListChild(item)
                 subitems = self.GetItems(item)
                 s = ''
