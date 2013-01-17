@@ -72,12 +72,12 @@ def _pushto(hn,domain,mirror,res):
 
 def merkle_tree(dir,d=dict()):
     for path, dirnames, filenames in os.walk(dir,followlinks=False):
-        dd = hashlib.sha256()
+        hl = []
         for dir in dirnames.sort():
             subdir = os.path.join(path,dir)
             merkle_tree(subdir,d)
             logging.warn("%s -> %s" % (subdir,d[subdir]))
-            dd.update(d[subdir])
+            hl.append(subdir)
 
         for fn in filenames.sort():
             subfile = os.path.join(path,fn)
@@ -89,9 +89,13 @@ def merkle_tree(dir,d=dict()):
                         md.update(buf)
                         buf = fd.read(8196)
                 d[subfile] = md.hexdigest()
-                dd.update(d[subfile])
+                hl.append(subfile)
             except IOError,ex:
                 logging.warn(ex)
+
+        dd = hashlib.sha256()
+        for h in hl.sort():
+            dd.update(d[h])
         d[path] = dd.hexdigest()
     return d
 
