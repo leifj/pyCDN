@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from setuptools import setup, find_packages
-import sys, os
+import os
 
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.rst')).read()
@@ -10,8 +10,7 @@ NEWS = open(os.path.join(here, 'NEWS.txt')).read()
 version = '0.1dev'
 
 install_requires = [
-    'eventlet',
-    'httplib2'
+    'workerpool'
 ]
 
 
@@ -34,7 +33,7 @@ setup(name='pyCDN',
     install_requires=install_requires,
     entry_points={
         'console_scripts':
-            ['pycdn=pycdn:main']
+            ['pycdn=pycdn:main','hostmeta.cgi=pycdn:hostmeta']
     },
     requires=install_requires
 )

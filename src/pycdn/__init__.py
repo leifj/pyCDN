@@ -1,6 +1,8 @@
 """
 A simple CDN manager
 """
+import cgitb
+import os
 
 import sys
 import getopt
@@ -9,6 +11,9 @@ import subprocess
 import logging
 from StringIO import StringIO
 import time
+import urllib
+import workerpool
+from pycdn.mt import MerkleTree, mtcmp
 
 def _p(args,env=dict()):
     proc = subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env)
@@ -49,13 +54,75 @@ def _up(status,host):
         return False
     return _ok(ping) and _ok(http)
 
+def _pushto(hn,domain,mirror,res):
+    try:
+        return _p(['rsync',
+                   '-avz',
+                   '--delete',
+                   '-e','ssh -oStrictHostKeyChecking=no -i/opt/cdn/keys/cdn',
+                   mirror,'cdn@%s.%s:/var/www/' % (hn,domain)])
+    except RuntimeError,ex:
+        logging.error(ex)
+        res[hn] = ex
+
+def _verify(cn,domain,dir,res):
+    try:
+        r = urllib.urlopen("http://%s.%s/.host-meta/mt.json" % (cn,domain))
+        mt_s = json.load(r)
+        mt_l = MerkleTree(dir)
+        if not mtcmp(mt_s,mt_l):
+            res[cn] = False
+    except Exception,ex:
+        res[cn] = ex
+
+def _zone(contact,nameservers,aliases,cdn,ok):
+    zone = dict()
+    zone['ttl'] = 120
+    zone['serial'] = int(time.strftime("%Y%M%d00"))
+    zone['contact'] = contact
+    zone['max_hosts'] = 2
+    ns = dict()
+    for n in nameservers:
+        ns[n] = None
+    zone['data'] = {'':{'ns':ns}}
+    a = dict(a=[],aaaa=[])
+
+    for v in aliases:
+        zone['data'][v] = dict(alias="")
+
+    for v in cdn:
+        cn = v[1]
+        zone['data'].setdefault(v[1],{})
+        ar = [v[0],"100"]
+        if '.' in v[0]:
+            at = 'a'
+        elif ':' in v[0]:
+            at = 'aaaa'
+        else:
+            logging.error("Unknown address format %s" % v[0])
+
+        zone['data'][cn][at] = [ar]
+        if ok(cn):
+            a[at].append(ar)
+            for vn in v[2:]:
+                zone['data'].setdefault(vn,dict())
+                zone['data'][vn].setdefault('a',[])
+                zone['data'][vn].setdefault('aaaa',[])
+                zone['data'][vn][at].append(ar)
+
+    if len(a['a']) > 0:
+        zone['data']['']['a'] = a['a']
+    if len(a['aaaa']) > 0:
+        zone['data']['']['aaaa'] = a['aaaa']
+    return json.dumps(zone)
+
 def main():
     """
 The main entrypoint of pyCDN
     """
     try:
-        opts,args = getopt.getopt(sys.argv[1:],'hf:c:n:d:a:v:',
-            ['help','hosts=','contact=','name-server=','domain=','alert=','vhosts='])
+        opts,args = getopt.getopt(sys.argv[1:],'hf:c:n:d:a:v:m:F',
+            ['help','hosts=','contact=','name-server=','domain=','alert=','vhosts=','mirror=','force'])
     except getopt.error,msg:
         print msg
         sys.exit(2)
@@ -65,7 +132,9 @@ The main entrypoint of pyCDN
     domain = None
     alert = "root@localhost"
     vhosts = "vhosts.txt"
+    mirror = "/opt/cdn/mirror"
     nameservers = []
+    force = False
     for o,a in opts:
         if o in ('-h','--help'):
             print __doc__
@@ -80,6 +149,10 @@ The main entrypoint of pyCDN
             domain = a
         elif o in ('-a','--alert'):
             alert = a
+        elif o in ('-m','--mirror'):
+            mirror = a
+        elif o in ('-F','--force'):
+            force = True
 
     cdn = []
     with open(hosts) as fd:
@@ -93,47 +166,43 @@ The main entrypoint of pyCDN
             aliases.append(e[0])
 
     cmd = args[0]
-    if cmd == 'geodns': 
-        zone = dict()
-        zone['ttl'] = 120
-        zone['serial'] = int(time.strftime("%Y%M%d00"))
-        zone['contact'] = contact
-        zone['max_hosts'] = 2
-        ns = dict()
-        for n in nameservers:
-            ns[n] = None
-        zone['data'] = {'':{'ns':ns}}
-        a = dict(a=[],aaaa=[])
+    if cmd == 'update':
+        push_list = []
+        if not force:
+            pool = workerpool.WorkerPool(size=5)
+            res = dict()
+            pool.map(lambda cn: _verify(cn,domain,mirror,res),[v[1] for v in cdn])
+            pool.shutdown()
+            pool.wait()
+            push_list = res.keys()
+        else:
+            push_list = [v[1] for v in cdn]
+
+        pool = workerpool.WorkerPool(size=5)
+        pres = dict()
+        pool.map(lambda cn: _pushto(cn,domain,mirror,pres),push_list)
+        pool.shutdown()
+        pool.wait()
+
+        pool = workerpool.WorkerPool(size=5)
+        vres = dict()
+        pool.map(lambda cn: _verify(cn,domain,mirror,vres),[v[1] for v in cdn])
+        pool.shutdown()
+        pool.wait()
+
         status = _opstatus()
+        def ok(cn):
+            return _up(status,cn) and not pres.has_key(cn) and not vres.has_key(cn)
 
-        for v in aliases:
-            zone['data'][v] = dict(alias="")
+        print _zone(contact,nameservers,aliases,cdn,ok)
 
-        for v in cdn:
-            cn = v[1]
-            zone['data'].setdefault(v[1],{})
-            ar = [v[0],"100"]
-            if '.' in v[0]:
-                at = 'a'
-            elif ':' in v[0]:
-                at = 'aaaa'
-            else:
-                logging.error("Unknown address format %s" % v[0])
+    if cmd == 'geodns':
+        status = _opstatus()
+        def ok(cn):
+            return _up(status,cn)
 
-            zone['data'][cn][at] = [ar]
-            if _up(status,cn):
-                a[at].append(ar)
-                for vn in v[2:]:
-                    zone['data'].setdefault(vn,dict())
-                    zone['data'][vn].setdefault('a',[])
-                    zone['data'][vn].setdefault('aaaa',[])
-                    zone['data'][vn][at].append(ar)
+        print _zone(contact,nameservers,aliases,cdn,ok)
 
-        if len(a['a']) > 0:
-            zone['data']['']['a'] = a['a']
-        if len(a['aaaa']) > 0:
-            zone['data']['']['aaaa'] = a['aaaa']
-        print json.dumps(zone)
     elif cmd == 'moncfg':
         print """
 alertdir                = /usr/lib/mon/alert.d
@@ -169,3 +238,4 @@ watch %(hostgroup)s
                       numalerts 10
                       alert mail.alert %(alert)s
                       upalert mail.alert %(alert)s""" % {'hostgroup': v[1],'alert':alert}
+
