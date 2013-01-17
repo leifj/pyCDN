@@ -8,7 +8,7 @@ import json
 from pycdn.wsgi import not_found, dispatcher
 
 def _digest(dir,d=dict()):
-    for path, dirnames, filenames in os.walk(dir):
+    for path, dirnames, filenames in os.walk(dir,followlinks=False):
         dd = hashlib.sha256()
         for dir in dirnames:
             subdir = os.path.join(path,dir)
