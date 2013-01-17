@@ -67,7 +67,7 @@ class MerkleTree:
                 f = file(fn, 'rb')
             except:
                 raise ValueError('ERROR: unable to open %s' % fn)
-            m.update('')
+            m.update(fn)
             while True:
                 d = f.read(8096)
                 if not d:
