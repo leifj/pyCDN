@@ -2,6 +2,7 @@
 A simple CDN manager
 """
 import cgitb
+import hashlib
 import os
 
 import sys
@@ -64,6 +65,29 @@ def _pushto(hn,domain,mirror,res):
     except RuntimeError,ex:
         logging.error(ex)
         res[hn] = ex
+
+def merkle_tree(dir,d=dict()):
+    for path, dirnames, filenames in os.walk(dir,followlinks=False):
+        dd = hashlib.sha256()
+        for dir in dirnames:
+            subdir = os.path.join(path,dir)
+            merkle_tree(subdir,d)
+            dd.update(d[subdir])
+        for fn in filenames:
+            subfile = os.path.join(path,fn)
+            md = hashlib.sha256()
+            try:
+                with open(subfile,'rb') as fd:
+                    buf = fd.read(8196)
+                    while buf:
+                        md.update(buf)
+                        buf = fd.read(8196)
+                d[subfile] = md.hexdigest()
+                dd.update(d[subfile])
+            except IOError,ex:
+                logging.warn(ex)
+        d[path] = dd.hexdigest()
+    return d
 
 def _verify(cn,domain,dir,res):
     try:
