@@ -69,11 +69,12 @@ def _pushto(hn,domain,mirror,res):
 def merkle_tree(dir,d=dict()):
     for path, dirnames, filenames in os.walk(dir,followlinks=False):
         dd = hashlib.sha256()
-        for dir in dirnames:
+        for dir in dirnames.sort():
             subdir = os.path.join(path,dir)
             merkle_tree(subdir,d)
             dd.update(d[subdir])
-        for fn in filenames:
+
+        for fn in filenames.sort():
             subfile = os.path.join(path,fn)
             md = hashlib.sha256()
             try:
