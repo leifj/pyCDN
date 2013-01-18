@@ -61,11 +61,14 @@ def _dump(o,fn):
 
 def _pushto(hn,domain,root,res):
     try:
+        host = hn
+        if domain:
+            host = "%s.%s" % (host,domain)
         return _p(['rsync',
                    '-avz',
                    '--delete',
                    '-e','ssh -oStrictHostKeyChecking=no -i/opt/cdn/keys/cdn',
-                   "%s/" % root,'cdn@%s.%s:%s/' % (hn,domain,root)])
+                   "%s/" % root,'cdn@%s:%s/' % (host,root)])
     except RuntimeError,ex:
         logging.error(ex)
         res[hn] = ex
@@ -171,7 +174,7 @@ The main entrypoint of pyCDN
     domain = None
     alert = "root@localhost"
     vhosts = "vhosts.txt"
-    mirror = "/opt/cdn/mirror"
+    mirror = "/var/www"
     nameservers = []
     force = False
     for o,a in opts:
@@ -236,18 +239,10 @@ The main entrypoint of pyCDN
         with open("/opt/cdn/dns/%s.json" % domain,"w") as fd:
             fd.write(_zone(contact,nameservers,aliases,cdn,ok))
 
-        pool = workerpool.WorkerPool(size=2)
-        pool.map(lambda cn: _pushto(cn,"samlbits.net","/opt/cdn/dns",dict()),['a.ns','b.ns'])
+        pool = workerpool.WorkerPool(size=5)
+        pool.map(lambda cn: _pushto(cn,None,"/opt/cdn/dns",dict()),nameservers)
         pool.shutdown()
         pool.wait()
-
-
-    if cmd == 'geodns':
-        status = _opstatus()
-        def ok(cn):
-            return _up(status,cn)
-
-        print _zone(contact,nameservers,aliases,cdn,ok)
 
     elif cmd == 'moncfg':
         print """
