@@ -110,7 +110,7 @@ def _verify(cn,domain,dir,res):
     try:
         r = urllib.urlopen("http://%s.%s/.host-meta/mt.json" % (cn,domain))
         if r.getcode() != 200:
-            raise IOError("%d %s" % (r.getcode(),r.info()))
+            raise IOError("ERROR fetching %s: %d %s" % (r.geturl(),r.getcode(),r.info()))
         mt_s = json.load(r)
         # _dump(mt_s,"/tmp/mt_s.json");
         mt_l = merkle_tree(dir)
