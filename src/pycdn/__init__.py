@@ -173,8 +173,9 @@ def main():
 The main entrypoint of pyCDN
     """
     try:
-        opts,args = getopt.getopt(sys.argv[1:],'hf:c:n:d:a:v:m:Fk:',
-            ['help','hosts=','contact=','name-server=','domain=','alert=','vhosts=','mirror=','force','key='])
+        opts,args = getopt.getopt(sys.argv[1:],'hFf:c:n:d:a:v:m:k:',
+            ['help','hosts=','contact=','name-server=','domain=','alert=',
+             'vhosts=','mirror=','force','key=','loglevel=','logfile='])
     except getopt.error,msg:
         print msg
         sys.exit(2)
