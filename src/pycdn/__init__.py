@@ -64,11 +64,12 @@ def _pushto(hn,domain,root,res):
         host = hn
         if domain:
             host = "%s.%s" % (host,domain)
-        return _p(['rsync',
-                   '-avz',
-                   '--delete',
-                   '-e','ssh -oStrictHostKeyChecking=no -i/opt/cdn/keys/cdn',
-                   "%s/" % root,'cdn@%s:%s/' % (host,root)])
+        stdout = _p(['rsync',
+                    '-az',
+                    '--delete',
+                    '-e','ssh -oStrictHostKeyChecking=no -i/opt/cdn/keys/cdn',
+                    "%s/" % root,'cdn@%s:%s/' % (host,root)])
+        logging.info("".join(stdout))
     except RuntimeError,ex:
         logging.error(ex)
         res[hn] = ex
@@ -106,7 +107,7 @@ def merkle_tree(dir,d=dict()):
         d[path] = dd.hexdigest()
     return d
 
-def _verify(cn,domain,dir,res):
+def _verify(cn,domain,dir,res,quiet=False):
     try:
         r = urllib.urlopen("http://%s.%s/.host-meta/mt.json" % (cn,domain))
         if r.getcode() != 200:
@@ -116,10 +117,10 @@ def _verify(cn,domain,dir,res):
         mt_l = merkle_tree(dir)
         # _dump(mt_l,"/tmp/mt_l.json");
         if not mt_s['/var/www'] == mt_l[dir]:
-            logging.warn("merkle tree verification failed! %s != %s" % (mt_s['/var/www'],mt_l[dir]))
-            res[cn] = False
+            raise ValueError("merkle tree verification failed! %s != %s" % (mt_s['/var/www'],mt_l[dir]))
     except Exception,ex:
-        logging.error(ex)
+        if not quiet:
+            logging.error(ex)
         res[cn] = ex
 
 def _zone(contact,nameservers,aliases,cdn,ok):
@@ -220,7 +221,7 @@ The main entrypoint of pyCDN
         if not force:
             pool = workerpool.WorkerPool(size=5)
             res = dict()
-            pool.map(lambda cn: _verify(cn,domain,mirror,res),[v[1] for v in cdn])
+            pool.map(lambda cn: _verify(cn,domain,mirror,res,quiet=True),[v[1] for v in cdn])
             pool.shutdown()
             pool.wait()
             push_list = res.keys()
