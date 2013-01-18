@@ -60,16 +60,18 @@ def _dump(o,fn):
     with open(fn,"w") as fd:
         fd.write(json.dumps(o))
 
-def _pushto(hn,domain,root,res,key):
+def _pushto(hn,domain,root,res,key,verbose=False):
     try:
         host = hn
         if domain:
             host = "%s.%s" % (host,domain)
-        stdout = _p(['rsync',
-                    '-az',
-                    '--delete',
-                    '-e',"ssh -oStrictHostKeyChecking=no -i%s" % key,
-                    "%s/" % root,'cdn@%s:%s/' % (host,root)])
+        root = root.strip("/")
+        args = ['rsync','-az','--delete']
+        if verbose:
+            args.append('--verbose')
+        args.append('-e',"ssh -oStrictHostKeyChecking=no -i%s" % key)
+        args.append("%s/" % root,'cdn@%s:%s/' % (host,root))
+        stdout = _p(args)
         for l in stdout.readlines():
             logging.info(l)
     except RuntimeError,ex:
@@ -173,7 +175,7 @@ def main():
 The main entrypoint of pyCDN
     """
     try:
-        opts,args = getopt.getopt(sys.argv[1:],'hFf:c:n:d:a:v:m:k:',
+        opts,args = getopt.getopt(sys.argv[1:],'hFf:c:n:d:a:V:m:k:',
             ['help','hosts=','contact=','name-server=','domain=','alert=',
              'vhosts=','mirror=','force','key=','loglevel=','logfile='])
     except getopt.error,msg:
@@ -198,6 +200,10 @@ The main entrypoint of pyCDN
             sys.exit(0)
         elif o in ('-f','--hosts'):
             hosts = a
+        elif o in ('-V','--vhosts'):
+            vhosts = a
+        elif o in ('-v','--verbose'):
+            verbose = True
         elif o in ('-c','--contact'):
             contact = a
         elif o in ('-n','--name-server'):
@@ -250,7 +256,7 @@ The main entrypoint of pyCDN
 
         pool = workerpool.WorkerPool(size=5)
         pres = dict()
-        pool.map(lambda cn: _pushto(cn,domain,mirror,pres,key),push_list)
+        pool.map(lambda cn: _pushto(cn,domain,mirror,pres,key,verbose),push_list)
         pool.shutdown()
         pool.wait()
 
@@ -268,7 +274,7 @@ The main entrypoint of pyCDN
             fd.write(_zone(contact,nameservers,aliases,cdn,ok))
 
         pool = workerpool.WorkerPool(size=5)
-        pool.map(lambda cn: _pushto(cn,None,"/opt/cdn/dns",dict(),key),nameservers)
+        pool.map(lambda cn: _pushto(cn,None,"/opt/cdn/dns",dict(),key,verbose),nameservers)
         pool.shutdown()
         pool.wait()
 
