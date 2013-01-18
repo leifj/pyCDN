@@ -68,7 +68,7 @@ def _pushto(hn,domain,root,res,key):
         stdout = _p(['rsync',
                     '-az',
                     '--delete',
-                    '-e','ssh -oStrictHostKeyChecking=no -i%s' % key,
+                    '-e',"ssh -oStrictHostKeyChecking=no -i%s" % key,
                     "%s/" % root,'cdn@%s:%s/' % (host,root)])
         for l in stdout.readlines():
             logging.info(l)
