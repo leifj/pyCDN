@@ -112,9 +112,10 @@ def _verify(cn,domain,dir,res):
         mt_s = json.load(r); _dump(mt_s,"/tmp/mt_s.json");
         mt_l = merkle_tree(dir); _dump(mt_l,"/tmp/mt_l.json");
         if not mt_s['/var/www'] == mt_l[dir]:
-            logging.debug("%s != %s" % (mt_s['/var/www'],mt_l[dir]))
+            logging.warn("merkle tree verification failed! %s != %s" % (mt_s['/var/www'],mt_l[dir]))
             res[cn] = False
     except Exception,ex:
+        logging.error(ex)
         res[cn] = ex
 
 def _zone(contact,nameservers,aliases,cdn,ok):
