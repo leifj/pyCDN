@@ -188,6 +188,9 @@ The main entrypoint of pyCDN
     nameservers = []
     force = False
     key = None
+    loglevel = logging.WARN
+    logfile = None
+
     for o,a in opts:
         if o in ('-h','--help'):
             print __doc__
@@ -208,6 +211,17 @@ The main entrypoint of pyCDN
             force = True
         elif o in ('-k','--key'):
             key = a
+        elif o in ('--loglevel'):
+            loglevel = getattr(logging, a.upper(), None)
+            if not isinstance(loglevel, int):
+                raise ValueError('Invalid log level: %s' % loglevel)
+        elif o in ('--logfile'):
+            logfile = a
+
+    log_args = {'level': loglevel}
+    if logfile is not None:
+        log_args['filename'] = logfile
+    logging.basicConfig(**log_args)
 
     cdn = []
     with open(hosts) as fd:
