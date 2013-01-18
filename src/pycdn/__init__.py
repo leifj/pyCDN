@@ -20,7 +20,8 @@ def _p(args,env=dict()):
     proc = subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=env)
     out,err = proc.communicate()
     if err is not None and len(err) > 0:
-        logging.error(err)
+        for l in StringIO(err).readlines():
+            logging.error(l)
     rv = proc.wait()
     if rv:
         raise RuntimeError("command exited with code != 0: %d" % rv)
@@ -59,7 +60,7 @@ def _dump(o,fn):
     with open(fn,"w") as fd:
         fd.write(json.dumps(o))
 
-def _pushto(hn,domain,root,res):
+def _pushto(hn,domain,root,res,key):
     try:
         host = hn
         if domain:
@@ -67,9 +68,10 @@ def _pushto(hn,domain,root,res):
         stdout = _p(['rsync',
                     '-az',
                     '--delete',
-                    '-e','ssh -oStrictHostKeyChecking=no -i/opt/cdn/keys/cdn',
+                    '-e','ssh -oStrictHostKeyChecking=no -i%s' % key,
                     "%s/" % root,'cdn@%s:%s/' % (host,root)])
-        logging.info("".join(stdout))
+        for l in stdout.readlines():
+            logging.info(l)
     except RuntimeError,ex:
         logging.error(ex)
         res[hn] = ex
@@ -171,8 +173,8 @@ def main():
 The main entrypoint of pyCDN
     """
     try:
-        opts,args = getopt.getopt(sys.argv[1:],'hf:c:n:d:a:v:m:F',
-            ['help','hosts=','contact=','name-server=','domain=','alert=','vhosts=','mirror=','force'])
+        opts,args = getopt.getopt(sys.argv[1:],'hf:c:n:d:a:v:m:Fk:',
+            ['help','hosts=','contact=','name-server=','domain=','alert=','vhosts=','mirror=','force','key='])
     except getopt.error,msg:
         print msg
         sys.exit(2)
@@ -185,6 +187,7 @@ The main entrypoint of pyCDN
     mirror = "/var/www"
     nameservers = []
     force = False
+    key = None
     for o,a in opts:
         if o in ('-h','--help'):
             print __doc__
@@ -203,6 +206,8 @@ The main entrypoint of pyCDN
             mirror = a
         elif o in ('-F','--force'):
             force = True
+        elif o in ('-k','--key'):
+            key = a
 
     cdn = []
     with open(hosts) as fd:
@@ -230,7 +235,7 @@ The main entrypoint of pyCDN
 
         pool = workerpool.WorkerPool(size=5)
         pres = dict()
-        pool.map(lambda cn: _pushto(cn,domain,mirror,pres),push_list)
+        pool.map(lambda cn: _pushto(cn,domain,mirror,pres,key),push_list)
         pool.shutdown()
         pool.wait()
 
@@ -248,7 +253,7 @@ The main entrypoint of pyCDN
             fd.write(_zone(contact,nameservers,aliases,cdn,ok))
 
         pool = workerpool.WorkerPool(size=5)
-        pool.map(lambda cn: _pushto(cn,None,"/opt/cdn/dns",dict()),nameservers)
+        pool.map(lambda cn: _pushto(cn,None,"/opt/cdn/dns",dict(),key),nameservers)
         pool.shutdown()
         pool.wait()
 
