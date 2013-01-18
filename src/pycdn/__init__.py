@@ -151,6 +151,8 @@ def _zone(contact,nameservers,aliases,cdn,ok):
                 zone['data'][vn].setdefault('a',[])
                 zone['data'][vn].setdefault('aaaa',[])
                 zone['data'][vn][at].append(ar)
+        else:
+            logging.warn("Excluding %s - not ok" % cn)
 
     if len(a['a']) > 0:
         zone['data']['']['a'] = a['a']
