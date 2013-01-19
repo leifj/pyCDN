@@ -21,6 +21,7 @@ def _p(args,env=dict()):
     out,err = proc.communicate()
     if err is not None and len(err) > 0:
         for l in StringIO(err).readlines():
+            l = l.strip()
             logging.error(l)
     rv = proc.wait()
     if rv:
