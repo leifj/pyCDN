@@ -194,6 +194,7 @@ The main entrypoint of pyCDN
     key = None
     loglevel = logging.WARN
     logfile = None
+    verbose = False
 
     for o,a in opts:
         if o in ('-h','--help'):
