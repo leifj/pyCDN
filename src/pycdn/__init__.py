@@ -245,16 +245,7 @@ The main entrypoint of pyCDN
 
     cmd = args[0]
     if cmd == 'update':
-        push_list = []
-        if not force:
-            pool = workerpool.WorkerPool(size=5)
-            res = dict()
-            pool.map(lambda cn: _verify(cn,domain,mirror,res,quiet=True),[v[1] for v in cdn])
-            pool.shutdown()
-            pool.wait()
-            push_list = res.keys()
-        else:
-            push_list = [v[1] for v in cdn]
+        push_list = [v[1] for v in cdn]
 
         pool = workerpool.WorkerPool(size=5)
         pres = dict()
