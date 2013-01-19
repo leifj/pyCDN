@@ -299,7 +299,7 @@ dtlogfile               = dtlog
 watch %(hostgroup)s
       service http
               description "HTTP service"
-              interval 2m
+              interval 5m
               monitor http.monitor
               period 
                       numalerts 10
@@ -307,10 +307,9 @@ watch %(hostgroup)s
                       upalert mail.alert %(alert)s
       service ping
                 description "Responses to ping"
-                interval 1m
+                interval 5m
                 monitor fping.monitor
                 period
                       numalerts 10
                       alert mail.alert %(alert)s
                       upalert mail.alert %(alert)s""" % {'hostgroup': v[1],'alert':alert}
-
